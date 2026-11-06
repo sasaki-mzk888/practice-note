@@ -1,5 +1,7 @@
 package com.example.practicenote.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -13,6 +15,8 @@ import java.util.Map;
 /** エラーの返し方(API仕様書・基本設計書の表に対応) */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /** 400: 必須未入力・文字数や数値の範囲外 → 項目ごとの理由を返す */
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -38,10 +42,31 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", "記録が見つかりません"));
     }
 
-    /** 500: その他の内部エラー(記録の中身はログに出さない) */
+    /** 500: その他の内部エラー(記録の中身はログに出さない)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleOther(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("message", "処理に失敗しました"));
+    }*/
+    /** 500: その他の内部エラー
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleOther(Exception e) {
+        log.error("予期しないエラー", e);                                                      // ★追加
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "処理に失敗しました"));
+    }*/
+
+    /** 500: その他の内部エラー(★原因調査のための一時的な書き方) */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleOther(Exception e) {
+        e.printStackTrace();
+        Throwable root = e;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "message", "処理に失敗しました",
+                        "debug", String.valueOf(root)));
     }
 }

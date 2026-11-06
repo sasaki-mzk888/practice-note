@@ -1,0 +1,4 @@
+.env
+practice_note.db
+target/
+.idea/
