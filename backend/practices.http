@@ -1,0 +1,57 @@
+### 1. 練習記録一覧取得API(新しい日付順)
+GET http://localhost:8080/api/practices
+
+### 2. 練習記録詳細取得API(存在するID)
+GET http://localhost:8080/api/practices/1
+
+### 3. 練習記録詳細取得API(存在しないID → 404)
+GET http://localhost:8080/api/practices/9999
+
+### 4. 練習記録登録API(成功 → 201)
+POST http://localhost:8080/api/practices
+Content-Type: application/json
+
+{
+  "practiceDate": "2026-11-05",
+  "content": "サーブ練習、ストローク",
+  "durationMin": 90,
+  "reflection": "ファーストサーブの確率が低い",
+  "nextGoal": "トスを安定させる"
+}
+
+### 5. 練習記録登録API(必須項目なし → 400)
+POST http://localhost:8080/api/practices
+Content-Type: application/json
+
+{
+  "content": "",
+  "durationMin": 0
+}
+
+### 6. 練習記録更新API(成功 → 200)
+PUT http://localhost:8080/api/practices/1
+Content-Type: application/json
+
+{
+  "practiceDate": "2026-11-04",
+  "content": "サーブ練習、ストローク、ボレー",
+  "durationMin": 100,
+  "reflection": "ファーストサーブの確率が少し上がった",
+  "nextGoal": "セカンドサーブを安定させる"
+}
+
+### 7. 練習記録更新API(存在しないID → 404)
+PUT http://localhost:8080/api/practices/9999
+Content-Type: application/json
+
+{
+  "practiceDate": "2026-11-04",
+  "content": "テスト",
+  "durationMin": 30
+}
+
+### 8. 練習記録削除API(成功 → 200)
+DELETE http://localhost:8080/api/practices/3
+
+### 9. 練習記録削除API(存在しないID → 404)
+DELETE http://localhost:8080/api/practices/9999
