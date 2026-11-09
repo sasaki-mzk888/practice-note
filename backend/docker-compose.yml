@@ -24,6 +24,8 @@ services:
       dockerfile: Dockerfile
     container_name: practice-note-backend
     environment:
+      TZ: Asia/Tokyo
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Tokyo
       DB_HOST: db
       DB_PORT: 3306
       DB_NAME: ${DB_NAME}

@@ -30,14 +30,17 @@ function formatDate(date) {
 
 function formatDateTime(dateTime) {
   if (!dateTime) return '—'
+  // BackendのLocalDateTimeはタイムゾーン情報を持たないため、日本時間として解釈する
+  const japanDateTime = new Date(`${dateTime}+09:00`)
   return new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     hourCycle: 'h23',
-  }).format(new Date(dateTime))
+  }).format(japanDateTime)
 }
 
 async function readError(response) {
@@ -204,7 +207,17 @@ function App() {
               <span className="stat-label">TOTAL PRACTICES</span>
               <span className="stat-caption">これまでの記録</span>
             </div>
-            <div className="court-lines" aria-hidden="true" />
+            <svg className="court-lines" viewBox="0 0 520 260" aria-hidden="true">
+              <g fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="8" y="8" width="504" height="244" />
+                <line x1="8" y1="38" x2="512" y2="38" />
+                <line x1="8" y1="222" x2="512" y2="222" />
+                <line x1="126" y1="38" x2="126" y2="222" />
+                <line x1="394" y1="38" x2="394" y2="222" />
+                <line x1="260" y1="8" x2="260" y2="252" />
+                <line x1="126" y1="130" x2="394" y2="130" />
+              </g>
+            </svg>
           </section>
 
           <section className="page-heading">

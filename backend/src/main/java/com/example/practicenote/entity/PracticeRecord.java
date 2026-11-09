@@ -11,11 +11,14 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /** 練習記録(テーブル practice_records に対応) */
 @Entity
 @Table(name = "practice_records")
 public class PracticeRecord {
+
+    private static final ZoneId JAPAN_TIME_ZONE = ZoneId.of("Asia/Tokyo");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,7 +49,7 @@ public class PracticeRecord {
     /** 登録時に登録日時・更新日時を自動で入れる */
     @PrePersist
     void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(JAPAN_TIME_ZONE);
         this.createdAt = now;
         this.updatedAt = now;
     }
@@ -54,7 +57,7 @@ public class PracticeRecord {
     /** 更新時に更新日時を自動で入れる */
     @PreUpdate
     void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now(JAPAN_TIME_ZONE);
     }
 
     public Long getPracticeId() { return practiceId; }
