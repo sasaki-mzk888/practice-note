@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.example.practicenote.security.AccountPrincipal;
 
 import java.util.List;
 
@@ -43,8 +45,9 @@ public class PracticeRecordController {
     /** 練習記録登録API: POST /api/practices(成功時は201) */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public PracticeRecord create(@Valid @RequestBody PracticeRecordRequest request) {
-        return service.create(request);
+    public PracticeRecord create(@Valid @RequestBody PracticeRecordRequest request,
+                                 @AuthenticationPrincipal AccountPrincipal user) {
+        return service.create(request, user.getUserId());
     }
 
     /** 練習記録更新API: PUT /api/practices/{id} */

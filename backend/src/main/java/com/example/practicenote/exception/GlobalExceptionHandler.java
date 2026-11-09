@@ -42,31 +42,11 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", "記録が見つかりません"));
     }
 
-    /** 500: その他の内部エラー(記録の中身はログに出さない)
+    /** 500: 詳細はサーバーログにだけ記録し、内部情報をAPI応答に含めない */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleOther(Exception e) {
+        log.error("予期しないエラー", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("message", "処理に失敗しました"));
-    }*/
-    /** 500: その他の内部エラー
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleOther(Exception e) {
-        log.error("予期しないエラー", e);                                                      // ★追加
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "処理に失敗しました"));
-    }*/
-
-    /** 500: その他の内部エラー(★原因調査のための一時的な書き方) */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleOther(Exception e) {
-        e.printStackTrace();
-        Throwable root = e;
-        while (root.getCause() != null) {
-            root = root.getCause();
-        }
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                        "message", "処理に失敗しました",
-                        "debug", String.valueOf(root)));
     }
 }

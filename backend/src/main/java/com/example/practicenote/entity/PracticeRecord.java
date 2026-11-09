@@ -40,6 +40,9 @@ public class PracticeRecord {
     @Column(name = "next_goal", length = 200)
     private String nextGoal;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -71,6 +74,9 @@ public class PracticeRecord {
     public void setReflection(String reflection) { this.reflection = reflection; }
     public String getNextGoal() { return nextGoal; }
     public void setNextGoal(String nextGoal) { this.nextGoal = nextGoal; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

@@ -58,6 +58,12 @@ function connectionError() {
 }
 
 function App() {
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [authMode, setAuthMode] = useState('login')
+  const [authForm, setAuthForm] = useState({ loginId: '', password: '', userName: '', role: 'EDITOR' })
+  const [authError, setAuthError] = useState('')
+  const [csrf, setCsrf] = useState({ token: '', headerName: 'X-CSRF-TOKEN' })
   const [records, setRecords] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -67,12 +73,46 @@ function App() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const canEdit = user?.role === 'EDITOR'
+
+  const refreshCsrfToken = useCallback(async () => {
+    const response = await fetch('/api/auth/csrf')
+    if (!response.ok) throw new Error(await readError(response))
+    const token = await response.json()
+    setCsrf(token)
+    return token
+  }, [])
+
+  useEffect(() => {
+    async function restoreLogin() {
+      try {
+        await refreshCsrfToken()
+        const response = await fetch('/api/auth/me')
+        if (response.ok) {
+          setUser(await response.json())
+        } else if (response.status !== 401) {
+          setAuthError(await readError(response))
+        }
+      } catch (err) {
+        setAuthError(err instanceof TypeError ? connectionError() : err.message)
+      } finally {
+        setAuthLoading(false)
+      }
+    }
+    restoreLogin()
+  }, [refreshCsrfToken])
 
   const loadRecords = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
       const response = await fetch(API_URL)
+      if (response.status === 401) {
+        setUser(null)
+        setAuthError('')
+        setAuthMode('login')
+        return
+      }
       if (!response.ok) throw new Error(await readError(response))
       setRecords(await response.json())
     } catch (err) {
@@ -83,8 +123,70 @@ function App() {
   }, [])
 
   useEffect(() => {
-    loadRecords()
-  }, [loadRecords])
+    if (user) loadRecords()
+  }, [loadRecords, user])
+
+  function updateAuthField(event) {
+    const { name, value } = event.target
+    setAuthForm((current) => ({ ...current, [name]: value }))
+  }
+
+  function chooseAuthMode(mode) {
+    setAuthMode(mode)
+    setAuthError('')
+  }
+
+  async function submitAuth(event) {
+    event.preventDefault()
+    setAuthError('')
+    try {
+      const token = await refreshCsrfToken()
+      const headers = { 'Content-Type': 'application/json', [token.headerName]: token.token }
+
+      if (authMode === 'register') {
+        const registerResponse = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(authForm),
+        })
+        if (!registerResponse.ok) throw new Error(await readError(registerResponse))
+      }
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ loginId: authForm.loginId, password: authForm.password }),
+      })
+      if (!response.ok) throw new Error(await readError(response))
+
+      setUser(await response.json())
+      setAuthForm((current) => ({ ...current, password: '' }))
+      await refreshCsrfToken()
+      setAuthError('')
+    } catch (err) {
+      setAuthError(err instanceof TypeError ? connectionError() : err.message || '認証できませんでした。')
+    }
+  }
+
+  async function logout() {
+    setAuthError('')
+    try {
+      const token = await refreshCsrfToken()
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { [token.headerName]: token.token },
+      })
+      if (!response.ok) throw new Error(await readError(response))
+      setUser(null)
+      setAuthMode('login')
+      setAuthError('')
+      setView('list')
+      setRecords([])
+      await refreshCsrfToken()
+    } catch (err) {
+      setError(err instanceof TypeError ? connectionError() : err.message || 'ログアウトできませんでした。')
+    }
+  }
 
   function updateField(event) {
     const { name, value } = event.target
@@ -92,6 +194,7 @@ function App() {
   }
 
   function openNewForm() {
+    if (!canEdit) return
     setEditingId(null)
     setForm(emptyForm())
     setError('')
@@ -101,6 +204,7 @@ function App() {
   }
 
   function startEditing(record) {
+    if (!canEdit) return
     setSelectedRecord(null)
     setEditingId(record.practiceId)
     setForm({
@@ -151,7 +255,7 @@ function App() {
     try {
       const response = await fetch(isEditing ? `${API_URL}/${editingId}` : API_URL, {
         method: isEditing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', [csrf.headerName]: csrf.token },
         body: JSON.stringify(payload),
       })
       if (!response.ok) throw new Error(await readError(response))
@@ -175,13 +279,60 @@ function App() {
     setError('')
     setNotice('')
     try {
-      const response = await fetch(`${API_URL}/${record.practiceId}`, { method: 'DELETE' })
+      const response = await fetch(`${API_URL}/${record.practiceId}`, {
+        method: 'DELETE',
+        headers: { [csrf.headerName]: csrf.token },
+      })
       if (!response.ok) throw new Error(await readError(response))
       setNotice('練習記録を削除しました。')
       await loadRecords()
     } catch (err) {
       setError(err instanceof TypeError ? connectionError() : err.message || '削除できませんでした。')
     }
+  }
+
+  if (authLoading) {
+    return (
+      <main className="app-shell">
+        <header className="topbar">
+          <span className="brand"><span className="brand-mark">S</span><span>SOFT TENNIS <strong>NOTE</strong></span></span>
+        </header>
+        <div className="auth-loading">ログイン状態を確認しています…</div>
+      </main>
+    )
+  }
+
+  if (!user) {
+    const registering = authMode === 'register'
+    return (
+      <main className="app-shell">
+        <header className="topbar">
+          <span className="brand"><span className="brand-mark">S</span><span>SOFT TENNIS <strong>NOTE</strong></span></span>
+          <span className="topbar-caption">練習を、次の成長につなげる。</span>
+        </header>
+        <section className="auth-layout">
+          <div className="auth-card">
+            <p className="eyebrow">ACCOUNT</p>
+            <h1>{registering ? 'アカウント作成' : 'ログイン'}</h1>
+            <p className="auth-description">{registering ? '利用区分を選んでアカウントを作成してください。' : 'ログインして練習記録を確認しましょう。'}</p>
+            {authError && <p className="error-banner" role="alert">{authError}</p>}
+            <form className="auth-form" onSubmit={submitAuth}>
+              {registering && <>
+                <label className="field-group"><span className="field-label">表示名</span><input name="userName" autoComplete="name" maxLength={80} value={authForm.userName} onChange={updateAuthField} required /></label>
+                <label className="field-group"><span className="field-label">利用区分</span><select name="role" value={authForm.role} onChange={updateAuthField}><option value="EDITOR">選手・指導者（登録・編集可）</option><option value="VIEWER">保護者・関係者（閲覧のみ）</option></select></label>
+              </>}
+              <label className="field-group"><span className="field-label">ログインID</span><input name="loginId" autoComplete="username" minLength={3} maxLength={100} value={authForm.loginId} onChange={updateAuthField} required /></label>
+              <label className="field-group"><span className="field-label">パスワード</span><input name="password" type="password" autoComplete={registering ? 'new-password' : 'current-password'} minLength={8} maxLength={64} value={authForm.password} onChange={updateAuthField} required />{registering && <span className="auth-hint">8文字以上で入力してください。</span>}</label>
+              <button className="primary-button auth-submit" type="submit">{registering ? '作成してログイン' : 'ログイン'} <span aria-hidden="true">→</span></button>
+            </form>
+            <button className="auth-switch" type="button" onClick={() => chooseAuthMode(registering ? 'login' : 'register')}>
+              {registering ? 'すでにアカウントをお持ちの方はこちら' : '初めて使う方はアカウントを作成'}
+            </button>
+          </div>
+        </section>
+        <footer className="footer">SOFT TENNIS NOTE <span>·</span> 一球ずつ、前へ。</footer>
+      </main>
+    )
   }
 
   return (
@@ -191,8 +342,18 @@ function App() {
           <span className="brand-mark" aria-hidden="true">S</span>
           <span>SOFT TENNIS <strong>NOTE</strong></span>
         </button>
-        <span className="topbar-caption">練習を、次の成長につなげる。</span>
+        <div className="topbar-actions">
+          {user ? <>
+            <span className="topbar-caption">{user.userName} さん・{canEdit ? '編集可能' : '閲覧のみ'}</span>
+            <button className="logout-button" type="button" onClick={logout}>ログアウト</button>
+          </> : <>
+            <button className="logout-button" type="button" onClick={() => chooseAuthMode('login')}>ログイン</button>
+            <button className="logout-button" type="button" onClick={() => chooseAuthMode('register')}>アカウント作成</button>
+          </>}
+        </div>
       </header>
+
+      {error && view !== 'list' && <p className="error-banner" role="alert">{error}</p>}
 
       {view === 'list' ? (
         <>
@@ -226,9 +387,9 @@ function App() {
               <h2>練習一覧</h2>
               <p className="page-description">日々の練習を振り返り、次の目標につなげましょう。</p>
             </div>
-            <button className="primary-button mobile-register" type="button" onClick={openNewForm}>
+            {canEdit && <button className="primary-button mobile-register" type="button" onClick={openNewForm}>
               <span aria-hidden="true">＋</span> 登録
-            </button>
+            </button>}
           </section>
 
           {notice && <p className="notice" role="status">{notice}</p>}
@@ -252,7 +413,7 @@ function App() {
                 <div className="empty-state">
                   <span className="empty-icon" aria-hidden="true">✦</span>
                   <strong>まだ記録がありません</strong>
-                  <span>「練習を登録」から最初の記録を作りましょう。</span>
+                  <span>{canEdit ? '「練習を登録」から最初の記録を作りましょう。' : 'まだ練習記録がありません。'}</span>
                 </div>
               ) : (
                 <div className="record-list">
@@ -273,27 +434,55 @@ function App() {
                           <span className="record-title">{record.content}</span>
                         </span>
                       </button>
-                      <div className="record-actions">
+                      {canEdit && <div className="record-actions">
                         <button type="button" onClick={() => startEditing(record)} aria-label={`${record.content}を編集`}>編集</button>
                         <button className="delete-action" type="button" onClick={() => deleteRecord(record)} aria-label={`${record.content}を削除`}>削除</button>
-                      </div>
+                      </div>}
                     </article>
                   ))}
                 </div>
               )}
             </section>
 
-            <aside className="list-aside">
+            <aside id="account-panel" className={`list-aside ${!user ? 'auth-visible' : ''}`}>
+              {!user ? (
+                <>
+                  <p className="eyebrow">ACCOUNT</p>
+                  {authMode === 'landing' ? (
+                    <>
+                      <button className="primary-button auth-landing-login" type="button" onClick={() => chooseAuthMode('login')}>ログイン <span aria-hidden="true">→</span></button>
+                      <button className="auth-switch auth-landing-register" type="button" onClick={() => chooseAuthMode('register')}>初めて使う方はアカウントを作成</button>
+                      <p className="aside-tip"><span aria-hidden="true">✦</span><span>未ログインでも一覧と詳細を確認できます。</span></p>
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="auth-aside-title">{authMode === 'register' ? 'アカウント作成' : 'ログイン'}</h2>
+                      <p className="auth-description">{authMode === 'register' ? '利用区分を選んでください。' : 'ログインIDとパスワードを入力してください。'}</p>
+                      {authError && <p className="error-banner" role="alert">{authError}</p>}
+                      <form className="auth-form" onSubmit={submitAuth}>
+                        {authMode === 'register' && <>
+                          <label className="field-group"><span className="field-label">表示名</span><input name="userName" autoComplete="name" maxLength={80} value={authForm.userName} onChange={updateAuthField} required /></label>
+                          <label className="field-group"><span className="field-label">利用区分</span><select name="role" value={authForm.role} onChange={updateAuthField}><option value="EDITOR">選手・指導者（登録・編集可）</option><option value="VIEWER">保護者・関係者（閲覧のみ）</option></select></label>
+                        </>}
+                        <label className="field-group"><span className="field-label">ログインID</span><input name="loginId" autoComplete="username" minLength={3} maxLength={100} value={authForm.loginId} onChange={updateAuthField} required /></label>
+                        <label className="field-group"><span className="field-label">パスワード</span><input name="password" type="password" autoComplete={authMode === 'register' ? 'new-password' : 'current-password'} minLength={8} maxLength={64} value={authForm.password} onChange={updateAuthField} required />{authMode === 'register' && <span className="auth-hint">8文字以上で入力してください。</span>}</label>
+                        <button className="primary-button auth-submit" type="submit">{authMode === 'register' ? '作成してログイン' : 'ログイン'} <span aria-hidden="true">→</span></button>
+                      </form>
+                      <button className="auth-switch" type="button" onClick={() => { setAuthMode(authMode === 'register' ? 'login' : 'register'); setAuthError('') }}>{authMode === 'register' ? 'すでにアカウントをお持ちの方はこちら' : '初めて使う方はアカウントを作成'}</button>
+                      <button className="auth-back" type="button" onClick={() => { setAuthMode('landing'); setAuthError('') }}>一覧へ戻る</button>
+                    </>
+                  )}
+                </>
+              ) : <>
               <p className="eyebrow">YOUR JOURNAL</p>
               <div className="list-count"><strong>{records.length}</strong><span>件</span></div>
               <p className="aside-caption">これまでの練習記録</p>
-              <button className="primary-button aside-register" type="button" onClick={openNewForm}>
-                練習を登録 <span aria-hidden="true">→</span>
-              </button>
+              {canEdit ? <button className="primary-button aside-register" type="button" onClick={openNewForm}>練習を登録 <span aria-hidden="true">→</span></button> : <p className="aside-caption">閲覧専用アカウントです。</p>}
               <div className="aside-tip">
                 <span aria-hidden="true">✦</span>
                 <p>小さな気づきも記録して、次の練習に活かしましょう。</p>
               </div>
+              </>}
             </aside>
           </div>
         </>
@@ -350,12 +539,12 @@ function App() {
             </dl>
 
             <div className="detail-actions">
-              <button className="primary-button" type="button" onClick={() => startEditing(selectedRecord)}>この記録を編集</button>
+              {canEdit && <button className="primary-button" type="button" onClick={() => startEditing(selectedRecord)}>この記録を編集</button>}
               <button className="secondary-button" type="button" onClick={returnToList}>一覧へ戻る</button>
             </div>
           </section>
         </>
-      ) : (
+      ) : canEdit ? (
         <>
           <button className="back-button" type="button" onClick={returnToList}>
             <span aria-hidden="true">←</span> 練習一覧に戻る
@@ -418,7 +607,7 @@ function App() {
             </form>
           </section>
         </>
-      )}
+      ) : <p className="error-banner" role="alert">閲覧専用アカウントでは登録・編集できません。</p>}
 
       <footer className="footer">SOFT TENNIS NOTE <span>·</span> 一球ずつ、前へ。</footer>
     </main>

@@ -33,8 +33,9 @@ public class PracticeRecordService {
 
     /** 登録 */
     @Transactional
-    public PracticeRecord create(PracticeRecordRequest request) {
+    public PracticeRecord create(PracticeRecordRequest request, Long userId) {
         PracticeRecord record = new PracticeRecord();
+        record.setUserId(userId);
         apply(record, request);
         return repository.save(record);
     }

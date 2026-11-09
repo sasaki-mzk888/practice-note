@@ -21,6 +21,30 @@ button:disabled { cursor: wait; opacity: .65; }
 .brand strong { color: var(--green); }
 .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--green); font-family: Georgia, serif; font-size: 18px; font-style: italic; letter-spacing: 0; }
 .topbar-caption { color: var(--muted); font-size: 12px; }
+.topbar-actions { display: flex; align-items: center; gap: 14px; }
+.logout-button { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; color: #607781; background: var(--paper); font-size: 11px; }
+.logout-button:hover { border-color: #a8d3e0; color: var(--green-dark); }
+
+.auth-layout { min-height: calc(100vh - 150px); display: grid; place-items: center; padding: 36px 0; }
+.auth-card { width: min(100%, 460px); padding: 32px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); box-shadow: 0 8px 28px #24404a0a; }
+.auth-card h1 { margin: 0; color: var(--ink); font-size: 27px; font-weight: 600; }
+.auth-description { margin: 9px 0 22px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.auth-form { display: grid; gap: 3px; }
+.auth-form input { display: block; width: 100%; min-height: 44px; padding: 10px 11px; border: 1px solid #dce9ed; border-radius: 7px; outline: none; color: var(--ink); background: #fbfdfe; font-size: 13px; }
+.auth-form select { display: block; width: 100%; min-height: 44px; padding: 10px 11px; border: 1px solid #dce9ed; border-radius: 7px; outline: none; color: var(--ink); background: #fbfdfe; font-size: 12px; }
+.auth-aside-title { margin: 0; color: var(--ink); font-size: 20px; font-weight: 600; }
+.auth-landing-login { width: 100%; justify-content: space-between; margin-top: 25px; min-height: 56px; padding: 0 24px; font-size: 15px; }
+.auth-landing-login span { font-size: 22px; }
+.auth-landing-register { margin: 22px auto 19px; font-size: 12px; }
+.auth-back { display: block; margin: 8px auto 0; padding: 8px; border: 0; color: var(--muted); background: transparent; font-size: 11px; }
+.auth-back:hover { color: var(--green-dark); text-decoration: underline; }
+.auth-form input:focus { border-color: #6bbbd3; box-shadow: 0 0 0 3px #e3f4fa; }
+.auth-hint { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
+.auth-submit { width: 100%; justify-content: space-between; margin-top: 9px; }
+.auth-submit span { font-size: 17px; }
+.auth-switch { display: block; margin: 18px auto 0; padding: 8px; border: 0; color: #168ab5; background: transparent; font-size: 11px; }
+.auth-switch:hover { text-decoration: underline; }
+.auth-loading { display: grid; min-height: 60vh; place-items: center; color: var(--muted); font-size: 13px; }
 
 .hero { min-height: 286px; margin: 28px 0 38px; padding: 42px 54px; border-radius: 20px; color: #fff; background: linear-gradient(112deg, #155d7b 0%, #1988ae 56%, #4bb4d1 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: space-between; }
 .hero-copy, .hero-stat { position: relative; z-index: 1; }
@@ -143,6 +167,11 @@ button:disabled { cursor: wait; opacity: .65; }
   .app-shell { padding: 0 16px; }
   .topbar { height: 62px; }
   .topbar-caption { display: none; }
+  .topbar-actions { gap: 6px; }
+  .logout-button { min-height: 34px; padding: 0 9px; font-size: 10px; }
+  .auth-layout { min-height: calc(100vh - 120px); padding: 24px 0; }
+  .auth-card { padding: 25px 20px; }
+  .auth-card h1 { font-size: 24px; }
   .hero { min-height: 252px; margin: 17px 0 28px; padding: 26px 22px; align-items: flex-start; }
   .hero-copy { padding-bottom: 74px; }
   .hero h1 { font-size: 25px; }
@@ -157,6 +186,7 @@ button:disabled { cursor: wait; opacity: .65; }
   .mobile-register { display: inline-flex; min-height: 42px; padding: 0 13px; white-space: nowrap; }
   .list-layout { grid-template-columns: 1fr; gap: 14px; }
   .list-aside { display: none; }
+  .list-aside.auth-visible { display: block; position: static; margin-top: 22px; }
   .section-heading { margin-bottom: 11px; }
   .section-heading h2 { font-size: 15px; }
   .record-list { gap: 9px; }
