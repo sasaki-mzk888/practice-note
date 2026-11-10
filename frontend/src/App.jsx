@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 
-const API_URL = '/api/practices'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
+const API_URL = `${API_BASE_URL}/api/practices`
+
+function apiFetch(path, options = {}) {
+  return fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    credentials: 'include',
+  })
+}
 
 function today() {
   const date = new Date()
@@ -54,7 +62,7 @@ async function readError(response) {
 }
 
 function connectionError() {
-  return 'バックエンドに接続できません。Docker Desktopを起動し、backendフォルダーで docker compose up -d を実行してください。'
+  return 'バックエンドに接続できません。バックエンドが起動しているか確認し、少し待ってから再試行してください。'
 }
 
 function App() {
@@ -76,7 +84,7 @@ function App() {
   const canEdit = user?.role === 'EDITOR'
 
   const refreshCsrfToken = useCallback(async () => {
-    const response = await fetch('/api/auth/csrf')
+    const response = await apiFetch('/api/auth/csrf')
     if (!response.ok) throw new Error(await readError(response))
     const token = await response.json()
     setCsrf(token)
@@ -87,7 +95,7 @@ function App() {
     async function restoreLogin() {
       try {
         await refreshCsrfToken()
-        const response = await fetch('/api/auth/me')
+        const response = await apiFetch('/api/auth/me')
         if (response.ok) {
           setUser(await response.json())
         } else if (response.status !== 401) {
@@ -106,7 +114,7 @@ function App() {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch(API_URL)
+      const response = await apiFetch(API_URL)
       if (response.status === 401) {
         setUser(null)
         setAuthError('')
@@ -144,7 +152,7 @@ function App() {
       const headers = { 'Content-Type': 'application/json', [token.headerName]: token.token }
 
       if (authMode === 'register') {
-        const registerResponse = await fetch('/api/auth/register', {
+        const registerResponse = await apiFetch('/api/auth/register', {
           method: 'POST',
           headers,
           body: JSON.stringify(authForm),
@@ -152,7 +160,7 @@ function App() {
         if (!registerResponse.ok) throw new Error(await readError(registerResponse))
       }
 
-      const response = await fetch('/api/auth/login', {
+      const response = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers,
         body: JSON.stringify({ loginId: authForm.loginId, password: authForm.password }),
@@ -172,7 +180,7 @@ function App() {
     setAuthError('')
     try {
       const token = await refreshCsrfToken()
-      const response = await fetch('/api/auth/logout', {
+      const response = await apiFetch('/api/auth/logout', {
         method: 'POST',
         headers: { [token.headerName]: token.token },
       })
@@ -253,7 +261,7 @@ function App() {
     }
 
     try {
-      const response = await fetch(isEditing ? `${API_URL}/${editingId}` : API_URL, {
+      const response = await apiFetch(isEditing ? `${API_URL}/${editingId}` : API_URL, {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json', [csrf.headerName]: csrf.token },
         body: JSON.stringify(payload),
@@ -279,7 +287,7 @@ function App() {
     setError('')
     setNotice('')
     try {
-      const response = await fetch(`${API_URL}/${record.practiceId}`, {
+      const response = await apiFetch(`${API_URL}/${record.practiceId}`, {
         method: 'DELETE',
         headers: { [csrf.headerName]: csrf.token },
       })
