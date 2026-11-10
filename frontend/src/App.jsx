@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
+// 本番ではVercelのrewrite経由でAPIへ接続し、セッションCookieを同一サイトで扱う
+const API_BASE_URL = import.meta.env.PROD
+  ? ''
+  : (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
 const API_URL = '/api/practices'
 
 function apiFetch(path, options = {}) {
