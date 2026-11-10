@@ -86,6 +86,12 @@ function App() {
   const [notice, setNotice] = useState('')
   const canEdit = user?.role === 'EDITOR'
 
+  useEffect(() => {
+    if (!notice) return undefined
+    const timeoutId = window.setTimeout(() => setNotice(''), 5000)
+    return () => window.clearTimeout(timeoutId)
+  }, [notice])
+
   const refreshCsrfToken = useCallback(async () => {
     const response = await apiFetch('/api/auth/csrf')
     if (!response.ok) throw new Error(await readError(response))
@@ -188,6 +194,7 @@ function App() {
         headers: { [token.headerName]: token.token },
       })
       if (!response.ok) throw new Error(await readError(response))
+      setNotice('')
       setUser(null)
       setAuthMode('login')
       setAuthError('')
