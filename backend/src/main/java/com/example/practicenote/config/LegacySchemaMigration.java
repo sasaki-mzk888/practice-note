@@ -3,10 +3,12 @@ package com.example.practicenote.config;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /** 既存DBにもユーザー所有者カラムと外部キーを追加する */
 @Component
+@Profile("!postgres")
 public class LegacySchemaMigration implements ApplicationRunner {
 
     private final JdbcTemplate jdbc;
