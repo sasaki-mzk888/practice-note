@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '')
-const API_URL = `${API_BASE_URL}/api/practices`
+const API_URL = '/api/practices'
 
 function apiFetch(path, options = {}) {
   return fetch(`${API_BASE_URL}${path}`, {
