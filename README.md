@@ -107,7 +107,7 @@ SOFT TENNIS NOTEは、練習内容や気づきを記録し、選手と指導者�
 
 ![練習一覧画面選手・指導者](frontend/src/screenshots/practice2.png)  
 
-★ 画面中央上部に【「練習内容」の記録を削除しますか？】のポップアップが表示される。
+★ 画面中央上部に【「練習内容」の記録を削除しますか？】のポップアップが表示される。  
 　 「OK」を押下。  
 
 ![削除ポップアップ](frontend/src/screenshots/sak.png)  
